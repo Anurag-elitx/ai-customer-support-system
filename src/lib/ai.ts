@@ -10,11 +10,11 @@ if (!process.env.HF_TOKEN) {
 }
 
 export const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY || "dummy_key_for_build",
   dangerouslyAllowBrowser: true, // Only if needed for client-side, but usually done in API routes
 });
 
-export const hf = new HfInference(process.env.HF_TOKEN);
+export const hf = new HfInference(process.env.HF_TOKEN || "dummy_token_for_build");
 
 // Helper for embeddings (Hugging Face)
 export async function getEmbeddings(text: string) {
