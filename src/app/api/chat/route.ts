@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     // Save user message to Firestore
     try {
-      await saveMessage(currentConvId, "user", message);
+      await saveMessage(currentConvId, "user", message, userId);
     } catch (e) {
       console.warn("Failed to save user message (Firestore rules?):", e);
     }
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
           
           // Save assistant response once complete
           try {
-            await saveMessage(currentConvId, "assistant", fullResponse);
+            await saveMessage(currentConvId, "assistant", fullResponse, userId);
           } catch (e) {
             console.warn("Failed to save assistant message (Firestore rules?):", e);
           }

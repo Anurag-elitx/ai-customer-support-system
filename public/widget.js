@@ -1,8 +1,18 @@
 (function() {
   // 1. Configuration
   const scriptSync = document.currentScript;
-  const userId = scriptSync.getAttribute('data-user-id');
-  const baseUrl = 'http://localhost:3000'; // Change to production URL later
+  const userId = scriptSync ? scriptSync.getAttribute('data-user-id') : null;
+  
+  // Dynamically determine baseUrl from script src
+  let baseUrl = 'https://ai-customer-support-system-25tv.vercel.app';
+  if (scriptSync && scriptSync.src) {
+    try {
+      const url = new URL(scriptSync.src);
+      baseUrl = url.origin;
+    } catch (e) {
+      console.error('SupportAI Widget: Invalid script source URL.', e);
+    }
+  }
 
   if (!userId) {
     console.error('SupportAI Widget: Missing data-user-id attribute.');

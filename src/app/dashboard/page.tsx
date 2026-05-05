@@ -15,15 +15,67 @@ import {
 import { motion } from "framer-motion";
 import { SupportCard } from "@/components/ui/SupportCard";
 
-const stats = [
-  { name: "Total Conversations", value: "24", icon: MessageCircle, trend: "+12%", color: "text-indigo-400" },
-  { name: "Avg. Response Time", value: "1.2s", icon: Clock, trend: "-0.4s", color: "text-purple-400" },
-  { name: "Resolution Rate", value: "88%", icon: Zap, trend: "+5%", color: "text-pink-400" },
-  { name: "Active Users", value: "156", icon: Users, trend: "+18%", color: "text-blue-400" },
-];
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+
+const TOKEN_LIMIT = 500000;
 
 export default function OverviewPage() {
   const { user } = useAuth();
+  const [stats, setStats] = useState([
+    { name: "Total Conversations", value: "0", icon: MessageCircle, trend: "Live", color: "text-indigo-400" },
+    { name: "Avg. Response Time", value: "1.2s", icon: Clock, trend: "-0.4s", color: "text-purple-400" },
+    { name: "Resolution Rate", value: "88%", icon: Zap, trend: "+5%", color: "text-pink-400" },
+    { name: "Token Usage", value: "0 / 500k", icon: ShieldCheck, trend: "0%", color: "text-blue-400", progress: 0 },
+  ]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchStats = async () => {
+      try {
+        // 1. Fetch Conversations Count (Include legacy)
+        const convosQuery = query(collection(db, "conversations"));
+        const convosSnap = await getDocs(convosQuery);
+        const totalConvos = convosSnap.docs.filter(d => {
+          const data = d.data();
+          return !data.userId || data.userId === user.uid;
+        }).length;
+
+        // 2. Fetch Token Usage (Include legacy)
+        const logsQuery = query(collection(db, "user_request_logs"));
+        const logsSnap = await getDocs(logsQuery);
+        let totalTokens = 0;
+        logsSnap.forEach((doc) => {
+          const data = doc.data();
+          if (!data.business_id || data.business_id === user.uid) {
+            totalTokens += data.total_tokens || 0;
+          }
+        });
+
+        const usagePercent = Math.min(Math.round((totalTokens / TOKEN_LIMIT) * 100), 100);
+
+        setStats([
+          { name: "Total Conversations", value: totalConvos.toString(), icon: MessageCircle, trend: "Live", color: "text-indigo-400" },
+          { name: "Avg. Response Time", value: "1.2s", icon: Clock, trend: "-0.4s", color: "text-purple-400" },
+          { name: "Resolution Rate", value: "88%", icon: Zap, trend: "+5%", color: "text-pink-400" },
+          { 
+            name: "Token Usage", 
+            value: `${totalTokens.toLocaleString()} / 500k`, 
+            icon: ShieldCheck, 
+            trend: `${usagePercent}%`, 
+            color: "text-blue-400",
+            progress: usagePercent
+          },
+        ]);
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, [user]);
 
   return (
     <div className="space-y-12">
@@ -71,7 +123,7 @@ export default function OverviewPage() {
                   <stat.icon size={18} />
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-1 rounded-md border ${
-                  stat.trend.startsWith('+') 
+                  stat.trend.startsWith('+') || stat.trend === "Live"
                     ? "bg-purple-500/10 text-purple-400 border-purple-500/20" 
                     : "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
                 }`}>
@@ -85,7 +137,7 @@ export default function OverviewPage() {
               <div className="mt-6 h-1 w-full bg-white/5 rounded-full overflow-hidden">
                 <motion.div 
                    initial={{ width: 0 }}
-                   animate={{ width: "60%" }}
+                   animate={{ width: (stat as any).progress !== undefined ? `${(stat as any).progress}%` : "60%" }}
                    transition={{ duration: 1.5, delay: i * 0.2 }}
                    className={`h-full bg-gradient-to-r from-transparent to-indigo-500`} 
                 />

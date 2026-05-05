@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { 
   MessageSquare, 
@@ -25,11 +25,14 @@ export default function ChatsPage() {
     user ? query(
       collection(db, "conversations"),
       orderBy("updatedAt", "desc"),
-      limit(20)
+      limit(50)
     ) : null
   );
 
-  const convos = convosValue?.docs.map(doc => ({ id: doc.id, ...doc.data() })) || [];
+  // Filter conversations: Show if it belongs to the user OR if it has no owner (legacy)
+  const convos = convosValue?.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter((convo: any) => !convo.userId || convo.userId === user?.uid) || [];
 
   return (
     <div className="flex h-[calc(100vh-160px)] gap-6 overflow-hidden">

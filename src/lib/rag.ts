@@ -45,12 +45,13 @@ export async function getChatHistory(conversationId: string, maxMessages: number
  * Saves a message to a conversation in Firestore.
  * Also updates the parent conversation's metadata for sorting.
  */
-export async function saveMessage(conversationId: string, role: string, content: string) {
+export async function saveMessage(conversationId: string, role: string, content: string, userId: string) {
   const convRef = doc(db, "conversations", conversationId);
   const historyRef = collection(convRef, "messages");
   
-  // Update parent doc for list sorting
+  // Update parent doc for list sorting and security
   await setDoc(convRef, {
+    userId,
     updatedAt: serverTimestamp(),
     lastMessage: content.substring(0, 100)
   }, { merge: true });

@@ -12,16 +12,27 @@ import {
   Activity,
   ShieldCheck
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const [origin, setOrigin] = useState("https://ai-customer-support-system-25tv.vercel.app");
   const [copied, setCopied] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentOrigin = window.location.origin;
+      // Only override the production URL if we are on a live deployment (not localhost)
+      if (!currentOrigin.includes("localhost")) {
+        setOrigin(currentOrigin);
+      }
+    }
+  }, []);
 
   const embedCode = `<!-- SupportAI Widget -->
 <script 
-  src="http://localhost:3000/widget.js" 
+  src="${origin}/widget.js" 
   data-user-id="${user?.uid || 'YOUR_USER_ID'}"
   async
 ></script>`;
